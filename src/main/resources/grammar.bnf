@@ -1,0 +1,30 @@
+program ::= (function_declaration)*
+
+function_declaration ::= FUN IDENTIFIER PAREN_OPEN argument_list? PAREN_CLOSE (COLON IDENTIFIER)? block
+
+argument_list ::= argument (COMMA argument)*
+argument ::= IDENTIFIER COLON IDENTIFIER
+
+block ::= BRACE_OPEN statement* BRACE_CLOSE
+
+statement ::= variable_declaration
+            | assignment
+            | if_statement
+            | return_statement
+            | expression
+
+variable_declaration ::= IDENTIFIER IDENTIFIER (OPERATOR '=' expression)? SEMICOLON
+assignment ::= IDENTIFIER OPERATOR '=' expression SEMICOLON
+
+if_statement ::= IF PAREN_OPEN expression PAREN_CLOSE block (ELSE block)?
+return_statement ::= RETURN expression SEMICOLON
+
+function_call ::= IDENTIFIER PAREN_OPEN (expression (COMMA expression)*)? PAREN_CLOSE SEMICOLON
+
+expression ::= primary (OPERATOR primary)*
+primary ::= PREFIX_OPERATOR primary
+          | IDENTIFIER
+          | NUMBER
+          | STRING
+          | PAREN_OPEN expression PAREN_CLOSE
+          | function_call

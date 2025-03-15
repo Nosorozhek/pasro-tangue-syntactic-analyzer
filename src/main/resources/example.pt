@@ -1,0 +1,21 @@
+fun main() {
+    int x = 2 + 3 + 5 + 4;
+    int y = 42;
+    x = 3 + y / 2;
+    str s = "Hello, world!";
+    println(s);
+
+    if (x < y) {
+        println(-1 + x * 2 + y * 3 - 4);
+    } else {
+        println("x is greater than or equal to y");
+    }
+}
+
+fun min(a: int, b: int) : int {
+    if (a < b) {
+        return a;
+    } else {
+        return b;
+    }
+}
