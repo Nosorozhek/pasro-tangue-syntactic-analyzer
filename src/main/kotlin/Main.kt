@@ -4,25 +4,39 @@ import kotlinx.serialization.json.Json
 import kotlin.time.measureTimedValue
 
 fun main() {
-    val file = object {}.javaClass.getResource("/example.pt")
-    val code = file?.readText() ?: ""
-    val (tokens, lexingTime) = measureTimedValue {
-        val lexer = Lexer(code)
-         lexer.tokenize()
+    for (path in listOf("/example.pt", "/lexer_error.pt", "/parser_error.pt")) {
+        try {
+            println("Parsing file $path...")
+            parse(path)
+        } catch (e: IllegalArgumentException) {
+            println("Failed to parse file $path: $e" + System.lineSeparator())
+        }
     }
-    for (token in tokens) {
-        println(token)
+}
+
+fun parse(path: String) {
+    val file = object {}.javaClass.getResource(path)!!
+    val code = file.readText()
+    val logger = DefaultErrorLogger(code, file)
+    val (tokens, lexingTime) = measureTimedValue {
+        val lexer = Lexer(code, logger)
+        lexer.tokenize()
     }
     val (ast, parsingTime) = measureTimedValue {
-        val parser = Parser(tokens)
+        val parser = Parser(tokens, logger)
         parser.parse()
     }
     val json = Json {
         classDiscriminator = "class"
         prettyPrint = true
     }
-    println(json.encodeToString(ast))
-    println("number of tokens: ${tokens.size}")
-    println("lexed in $lexingTime")
-    println("parsed in $parsingTime")
+
+    println(json.encodeToString(ast) + """
+        
+    ^~~~ Parsed file $path
+    Number of tokens: ${tokens.size}
+    Lexed in $lexingTime
+    Parsed in $parsingTime
+    
+    """.trimIndent())
 }

@@ -1,7 +1,7 @@
 package org.example
 
 
-class Lexer(private val input: String) {
+class Lexer(private val input: String, private val logger: ErrorLogger) {
     private var start = 0
     private var startColumn = 0
     private var position = 0
@@ -46,7 +46,10 @@ class Lexer(private val input: String) {
             '%' -> Token(TokenType.OPERATOR, "%", start, line, startColumn)
             '"' -> parseStringLiteral()
             '!' -> if (match('=')) Token(TokenType.OPERATOR, "!=", start, line, startColumn)
-            else throw IllegalArgumentException("Unexpected character at $line: $c")
+            else {
+                logger.logError(start, line, startColumn, "Unexpected character")
+                throw IllegalArgumentException()
+            }
 
             '=' -> if (match('=')) Token(TokenType.OPERATOR, "==", start, line, startColumn)
             else Token(TokenType.OPERATOR, "=", start, line, startColumn)
@@ -76,7 +79,8 @@ class Lexer(private val input: String) {
             }
 
             else -> {
-                throw IllegalArgumentException("Unexpected character at $line: $c")
+                logger.logError(start, line, startColumn, "Unexpected character")
+                throw IllegalArgumentException()
             }
         }
     }
@@ -105,7 +109,8 @@ class Lexer(private val input: String) {
         }
 
         if (peek() != '"') {
-            throw IllegalArgumentException("Unterminated string literal.")
+            logger.logError(start, line, startColumn, "Unterminated string literal")
+            throw IllegalArgumentException()
         }
         next()
 

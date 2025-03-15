@@ -1,9 +1,22 @@
 package org.example
 
-class Parser(private val tokens: List<Token>) {
+class Parser(
+    private val tokens: List<Token>,
+    private val logger: ErrorLogger
+) {
     private var position = 0
 
     private fun peek(): Token? = tokens.getOrNull(position)
+
+    private fun peekNearest(): Token = tokens[position.coerceIn(tokens.indices)]
+
+    private fun reportUnexpectedToken() {
+        val token = peekNearest()
+        logger.logError(
+            token.position, token.line, token.column,
+            "Unexpected token of type ${token.type.name}"
+        )
+    }
 
     private fun expect(type: TokenType): Token {
         val token = peek()
@@ -11,7 +24,12 @@ class Parser(private val tokens: List<Token>) {
             ++position
             return token
         } else {
-            throw IllegalArgumentException("Expected token $type but found ${token?.type} \"${token?.value}\" at position ${token?.position} (line ${token?.line}, column ${token?.column})")
+            val nearestToken = peekNearest()
+            logger.logError(
+                nearestToken.position, nearestToken.line, nearestToken.column,
+                "Expected token $type but found ${token?.type?.name}"
+            )
+            throw IllegalArgumentException()
         }
     }
 
@@ -83,7 +101,10 @@ class Parser(private val tokens: List<Token>) {
 
             TokenType.IF -> parseIfStatement()
             TokenType.RETURN -> parseReturnStatement()
-            else -> throw IllegalArgumentException("Unexpected token ${peek()?.type} \"${peek()?.value}\" at position $position")
+            else -> {
+                reportUnexpectedToken()
+                throw IllegalArgumentException()
+            }
         }
     }
 
@@ -185,7 +206,10 @@ class Parser(private val tokens: List<Token>) {
                 expression
             }
 
-            else -> throw IllegalArgumentException("Unexpected token ${peek()?.type} \"${peek()?.value}\" at position $position")
+            else -> {
+                reportUnexpectedToken()
+                throw IllegalArgumentException()
+            }
         }
     }
 

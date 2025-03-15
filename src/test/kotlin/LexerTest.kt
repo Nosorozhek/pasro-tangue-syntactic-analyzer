@@ -1,11 +1,17 @@
+import org.example.ErrorLogger
 import org.example.Lexer
 import org.example.Token
 import org.example.TokenType
 import org.junit.jupiter.api.Test
 import kotlin.test.assertContentEquals
 
+class StubErrorLogger:ErrorLogger {
+    override fun logError(position: Int, line: Int, column: Int, message: String) {}
+}
+
+
 class LexerTest {
-    private fun lexer(input: String): Lexer = Lexer(input)
+    private fun lexer(input: String): Lexer = Lexer(input, StubErrorLogger())
 
     @Test
     fun `tokenize simple function`() {
