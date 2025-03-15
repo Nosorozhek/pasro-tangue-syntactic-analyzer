@@ -1,76 +1,135 @@
 package org.example
 
-import kotlinx.serialization.Serializable
-import java.util.regex.Pattern
-
-enum class TokenType(pattern: String, val ignore: Boolean = false) {
-    FUN("fun"),
-    IF("if"),
-    ELSE("else"),
-    RETURN("return"),
-
-    NUMBER("\\d+"),
-    STRING("\"[^\"\n]*\""),
-    IDENTIFIER("[a-zA-Z_][a-zA-Z0-9_]*"),
-    OPERATOR("-|==|!=|<=|>=|<|>|[+]|=|[*]|/|%"),
-    COMMA(","),
-    COLON(":"),
-    SEMICOLON(";"),
-    PAREN_OPEN("\\("),
-    PAREN_CLOSE("\\)"),
-    BRACE_OPEN("\\{"),
-    BRACE_CLOSE("\\}"),
-    WHITESPACE("[\\s^\n]+", true);
-
-
-    val regex: Pattern = Pattern.compile(pattern)
-}
-
-@Serializable
-data class Token(val type: TokenType, val value: String, val position: Int, val line: Int, val column: Int)
-
 
 class Lexer(private val input: String) {
+    private var start = 0
+    private var startColumn = 0
     private var position = 0
     private var line = 1
     private var column = 1
 
+    private fun Char.isLetter(): Boolean = this in 'a'..'z' || this in 'A'..'Z' || this == '_'
+
+    private fun Char.isLetterOrDigit(): Boolean = this.isLetter() || this.isDigit()
+
+    private fun Char.isDigit(): Boolean = this in '0'..'9'
+
     fun tokenize(): List<Token> {
         val tokens = mutableListOf<Token>()
-
-        while (position < input.length) {
-            var matched = false
-
-            for (tokenType in TokenType.entries) {
-                val matcher = tokenType.regex.matcher(input.substring(position))
-                if (matcher.lookingAt()) {
-                    val match = matcher.group()
-                    if (!tokenType.ignore) {
-                        tokens.add(Token(tokenType, match, position, line, column))
-                    }
-                    advance(match)
-                    matched = true
-                    break
-                }
-            }
-
-            if (!matched) {
-                throw IllegalArgumentException("Unexpected character at $line:$column \"${input[position]}\"")
-            }
+        while (!endOfFile()) {
+            start = position
+            startColumn = column
+            scanToken()?.let { tokens.add(it) }
         }
 
+        tokens.add(Token(TokenType.EOF, "", position, line, column))
         return tokens
     }
 
-    private fun advance(text: String) {
-        for (char in text) {
-            if (char == '\n') {
-                line++
-                column = 1
-            } else {
-                column++
+    private fun scanToken(): Token? {
+        val c = next()
+        return if (c.isDigit()) {
+            parseNumberLiteral()
+        } else if (c.isLetter()) {
+            parseIdentifier()
+        } else when (c) {
+            '(' -> Token(TokenType.PAREN_OPEN, "(", start, line, startColumn)
+            ')' -> Token(TokenType.PAREN_CLOSE, ")", start, line, startColumn)
+            '{' -> Token(TokenType.BRACE_OPEN, "{", start, line, startColumn)
+            '}' -> Token(TokenType.BRACE_CLOSE, "}", start, line, startColumn)
+            ',' -> Token(TokenType.COMMA, ",", start, line, startColumn)
+            '-' -> Token(TokenType.OPERATOR, "-", start, line, startColumn)
+            '+' -> Token(TokenType.OPERATOR, "+", start, line, startColumn)
+            ':' -> Token(TokenType.COLON, ":", start, line, startColumn)
+            ';' -> Token(TokenType.SEMICOLON, ";", start, line, startColumn)
+            '*' -> Token(TokenType.OPERATOR, "*", start, line, startColumn)
+            '%' -> Token(TokenType.OPERATOR, "%", start, line, startColumn)
+            '"' -> parseStringLiteral()
+            '!' -> if (match('=')) Token(TokenType.OPERATOR, "!=", start, line, startColumn)
+            else throw IllegalArgumentException("Unexpected character at $line: $c")
+
+            '=' -> if (match('=')) Token(TokenType.OPERATOR, "==", start, line, startColumn)
+            else Token(TokenType.OPERATOR, "=", start, line, startColumn)
+
+            '<' -> if (match('=')) Token(TokenType.OPERATOR, "<=", start, line, startColumn)
+            else Token(TokenType.OPERATOR, "<", start, line, startColumn)
+
+            '>' -> if (match('=')) Token(TokenType.OPERATOR, ">=", start, line, startColumn)
+            else Token(TokenType.OPERATOR, ">", start, line, startColumn)
+
+            '/' -> {
+                if (match('/')) {
+                    while (peek() != '\n' && !endOfFile()) next()
+                    Token(TokenType.COMMENT, input.substring(start, position), start, line, startColumn)
+                } else {
+                    Token(TokenType.OPERATOR, "/", start, line, startColumn)
+                }
             }
-            position++
+
+            ' ', '\r', '\t' -> {
+                null
+            }
+
+            '\n' -> {
+                newLine()
+                null
+            }
+
+            else -> {
+                throw IllegalArgumentException("Unexpected character at $line: $c")
+            }
         }
+    }
+
+    private fun parseIdentifier(): Token {
+        while (peek()?.isLetterOrDigit() == true) next()
+
+        return when (val text: String = input.substring(start, position)) {
+            "fun" -> Token(TokenType.FUN, text, start, line, startColumn)
+            "if" -> Token(TokenType.IF, text, start, line, startColumn)
+            "else" -> Token(TokenType.ELSE, text, start, line, startColumn)
+            "return" -> Token(TokenType.RETURN, text, start, line, startColumn)
+            else -> Token(TokenType.IDENTIFIER, text, start, line, startColumn)
+        }
+    }
+
+    private fun parseNumberLiteral(): Token {
+        while (peek()?.isDigit() == true) next()
+
+        return Token(TokenType.NUMBER, input.substring(start, position), start, line, startColumn)
+    }
+
+    private fun parseStringLiteral(): Token {
+        while (peek() != '"' && peek() != '\n' && !endOfFile()) {
+            next()
+        }
+
+        if (peek() != '"') {
+            throw IllegalArgumentException("Unterminated string literal.")
+        }
+        next()
+
+        val value: String = input.substring(start, position)
+        return Token(TokenType.STRING, value, start, line, startColumn)
+    }
+
+    private fun match(expected: Char): Boolean {
+        if (input.getOrNull(position) != expected) return false
+        ++position
+        return true
+    }
+
+    private fun peek(): Char? = input.getOrNull(position)
+
+    private fun endOfFile(): Boolean = position >= input.length
+
+    private fun next(): Char {
+        ++column
+        return input[position++]
+    }
+
+    private fun newLine() {
+        ++line
+        column = 1
     }
 }
