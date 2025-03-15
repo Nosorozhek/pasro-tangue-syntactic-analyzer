@@ -114,7 +114,7 @@ class Lexer(private val input: String, private val logger: ErrorLogger) {
         }
         next()
 
-        val value: String = input.substring(start, position)
+        val value: String = input.substring(start + 1, position - 1)
         return Token(TokenType.STRING, value, start, line, startColumn)
     }
 

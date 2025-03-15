@@ -95,7 +95,9 @@ class Parser(
                 when (nextToken?.type) {
                     TokenType.PAREN_OPEN -> parseFunctionCall()
                     TokenType.IDENTIFIER -> parseVariableDeclaration()
-                    else -> parseAssignment()
+                    else -> if (nextToken?.value == "=") parseAssignment() else {
+                        parseExpression().also { expect(TokenType.SEMICOLON) }
+                    }
                 }
             }
 
@@ -175,6 +177,7 @@ class Parser(
             val operator = peek() ?: break
             if (operator.type != TokenType.OPERATOR) break
             val operatorPrecedence = getOperatorPrecedence(operator)
+            println("${operator.value} $operatorPrecedence")
             if (operatorPrecedence < precedence) {
                 return left
             }

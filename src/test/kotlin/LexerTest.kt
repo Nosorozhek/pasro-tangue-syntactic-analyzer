@@ -1,13 +1,8 @@
-import org.example.ErrorLogger
 import org.example.Lexer
 import org.example.Token
 import org.example.TokenType
 import org.junit.jupiter.api.Test
 import kotlin.test.assertContentEquals
-
-class StubErrorLogger:ErrorLogger {
-    override fun logError(position: Int, line: Int, column: Int, message: String) {}
-}
 
 
 class LexerTest {
@@ -74,7 +69,7 @@ class LexerTest {
         """.trimIndent()
         val lexer = lexer(input)
         val tokens = lexer.tokenize().map { it.value }
-        val expected = listOf("fun", "main", "(", ")", "{", "return", "\"Hello, World!\"", ";", "}", "")
+        val expected = listOf("fun", "main", "(", ")", "{", "return", "Hello, World!", ";", "}", "")
         assertContentEquals(expected, tokens)
     }
 

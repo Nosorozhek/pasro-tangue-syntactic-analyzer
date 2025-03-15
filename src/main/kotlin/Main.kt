@@ -31,12 +31,14 @@ fun parse(path: String) {
         prettyPrint = true
     }
 
-    println(json.encodeToString(ast) + """
+    println(
+        json.encodeToString(ast) + """
         
     ^~~~ Parsed file $path
     Number of tokens: ${tokens.size}
     Lexed in $lexingTime
     Parsed in $parsingTime
     
-    """.trimIndent())
+    """.trimIndent()
+    )
 }
