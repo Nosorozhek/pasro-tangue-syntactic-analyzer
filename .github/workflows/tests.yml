@@ -28,6 +28,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
 
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
       - name: Build with Gradle
         run: ./gradlew build
 
@@ -37,6 +40,9 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
       - name: Run Backend Tests
         run: ./gradlew test
