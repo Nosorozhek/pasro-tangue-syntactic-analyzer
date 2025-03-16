@@ -35,9 +35,11 @@ fun parse(path: String) {
         json.encodeToString(ast) + """
         
     ^~~~ Parsed file $path
-    Number of tokens: ${tokens.size}
-    Lexed in $lexingTime
+    Number of tokens: ${tokens.count()}
+    Lexed  in $lexingTime
     Parsed in $parsingTime
+    ----------------------
+              ${lexingTime + parsingTime}
     
     """.trimIndent()
     )

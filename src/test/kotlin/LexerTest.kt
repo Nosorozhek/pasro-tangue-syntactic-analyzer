@@ -7,6 +7,8 @@ import kotlin.test.assertContentEquals
 
 class LexerTest {
     private fun lexer(input: String): Lexer = Lexer(input, StubErrorLogger())
+    private fun tokenize(input: String): List<Token> = lexer(input).tokenize().toList()
+
 
     @Test
     fun `tokenize simple function`() {
@@ -15,8 +17,7 @@ class LexerTest {
                 return 42;
             }
         """.trimIndent()
-        val lexer = lexer(input)
-        val tokens = lexer.tokenize()
+        val tokens = tokenize(input)
         val expected = listOf(
             Token(TokenType.FUN, "fun", 0, 1, 1),
             Token(TokenType.IDENTIFIER, "main", 4, 1, 5),
@@ -37,8 +38,7 @@ class LexerTest {
         val input = """
             fun min(a: int, b: int): int {}
         """.trimIndent()
-        val lexer = lexer(input)
-        val tokens = lexer.tokenize().map { it.value }
+        val tokens = tokenize(input).map { it.value }
         val expected = listOf("fun", "min", "(", "a", ":", "int", ",", "b", ":", "int", ")", ":", "int", "{", "}", "")
         assertContentEquals(expected, tokens)
     }
@@ -52,8 +52,7 @@ class LexerTest {
                 return b;
             }
         """.trimIndent()
-        val lexer = lexer(input)
-        val tokens = lexer.tokenize().map { it.value }
+        val tokens = tokenize(input).map { it.value }
         val expected = listOf(
             "if", "(", "a", "<", "b", ")", "{", "return", "a", ";", "}", "else", "{", "return", "b", ";", "}", ""
         )
@@ -67,8 +66,7 @@ class LexerTest {
                 return "Hello, World!";
             }
         """.trimIndent()
-        val lexer = lexer(input)
-        val tokens = lexer.tokenize().map { it.value }
+        val tokens = tokenize(input).map { it.value }
         val expected = listOf("fun", "main", "(", ")", "{", "return", "Hello, World!", ";", "}", "")
         assertContentEquals(expected, tokens)
     }
@@ -78,8 +76,7 @@ class LexerTest {
         val input = """
             -a + b - c * d / e % f == g != h <= i >= j < k > l = m
         """.trimIndent()
-        val lexer = lexer(input)
-        val tokens = lexer.tokenize().map { it.value }
+        val tokens = tokenize(input).map { it.value }
         val expected = listOf(
             "-", "a", "+", "b", "-", "c", "*", "d", "/", "e", "%", "f", "==",
             "g", "!=", "h", "<=", "i", ">=", "j", "<", "k", ">", "l", "=", "m", ""
@@ -92,8 +89,7 @@ class LexerTest {
         val input = """
             -a + b - c * d / e % f == g != h <= i >= j < k > l = m
         """.trimIndent().filter { it != ' ' }
-        val lexer = lexer(input)
-        val tokens = lexer.tokenize().map { it.value }
+        val tokens = tokenize(input).map { it.value }
         val expected = listOf(
             "-", "a", "+", "b", "-", "c", "*", "d", "/", "e", "%", "f", "==",
             "g", "!=", "h", "<=", "i", ">=", "j", "<", "k", ">", "l", "=", "m", ""
@@ -107,8 +103,7 @@ class LexerTest {
             fun min(int a,int b):int{if(a<b){return a;}return b;}
             fun main(){int x=12;int y=13;print(x+y/12)return min(x,y)!=12;}
         """.trimIndent()
-        val lexer = lexer(input)
-        val tokens = lexer.tokenize().map { it.value }
+        val tokens = tokenize(input).map { it.value }
         val expected = listOf(
             "fun", "min", "(", "int", "a", ",", "int", "b", ")", ":", "int", "{",
             "if", "(", "a", "<", "b", ")", "{", "return", "a", ";", "}",
@@ -129,8 +124,7 @@ class LexerTest {
         val input = """
             func fun if if1 else else1 else_ return returnn
         """.trimIndent()
-        val lexer = lexer(input)
-        val tokens = lexer.tokenize().map { it.value to it.type }
+        val tokens = tokenize(input).map { it.value to it.type }
         val expected = listOf(
             "func" to TokenType.IDENTIFIER,
             "fun" to TokenType.FUN,

@@ -1,41 +1,65 @@
 package org.example
 
 class Parser(
-    private val tokens: List<Token>,
+    tokens: Sequence<Token>,
     private val logger: ErrorLogger
 ) {
-    private var position = 0
+    private val iterator = object {
+        private var tokenIterator = tokens.iterator()
+        private var currentToken: Token = tokenIterator.next()
+        private var lookaheadToken: Token? = null
+        fun peek(): Token = currentToken
+        fun next(): Token? {
+            if (lookaheadToken != null) {
+                currentToken = lookaheadToken!!
+                lookaheadToken = null
+                return currentToken
+            }
+            if (!tokenIterator.hasNext()) return null
+            currentToken = tokenIterator.next()
+            return currentToken
+        }
 
-    private fun peek(): Token? = tokens.getOrNull(position)
+        fun peekNext(): Token? {
+            if (lookaheadToken != null) return lookaheadToken
+            if (!tokenIterator.hasNext()) return null
+            lookaheadToken = tokenIterator.next()
+            return lookaheadToken
+        }
 
-    private fun peekNearest(): Token = tokens[position.coerceIn(tokens.indices)]
+        fun expect(type: TokenType): Token {
+            val token = peek()
+            if (token.type == type) {
+                val nextToken = next()
+                if (nextToken != null)
+                    currentToken = nextToken
+                return token
+            } else {
+                logger.logError(
+                    currentToken.position, currentToken.line, currentToken.column,
+                    "Expected token $type but found ${token.type.name}"
+                )
+                throw IllegalArgumentException()
+            }
+        }
+    }
+
+    private fun peek(): Token = iterator.peek()
+    private fun next(): Token? = iterator.next()
+    private fun peekNext(): Token? = iterator.peekNext()
+    private fun expect(type: TokenType): Token = iterator.expect(type)
 
     private fun reportUnexpectedToken() {
-        val token = peekNearest()
+        val token = peek()
         logger.logError(
             token.position, token.line, token.column,
             "Unexpected token of type ${token.type.name}"
         )
     }
 
-    private fun expect(type: TokenType): Token {
-        val token = peek()
-        if (token?.type == type) {
-            ++position
-            return token
-        } else {
-            val nearestToken = peekNearest()
-            logger.logError(
-                nearestToken.position, nearestToken.line, nearestToken.column,
-                "Expected token $type but found ${token?.type?.name}"
-            )
-            throw IllegalArgumentException()
-        }
-    }
-
     private fun parseProgram(): ProgramNode {
         val functions = mutableListOf<FunctionDeclarationNode>()
-        while (peek()?.type == TokenType.FUN) {
+        while (peek().type == TokenType.FUN) {
             functions.add(parseFunctionDeclaration())
         }
         expect(TokenType.EOF)
@@ -46,9 +70,9 @@ class Parser(
         expect(TokenType.FUN)
         val identifier = expect(TokenType.IDENTIFIER)
         expect(TokenType.PAREN_OPEN)
-        val arguments = if (peek()?.type != TokenType.PAREN_CLOSE) parseArgumentList() else emptyList()
+        val arguments = if (peek().type != TokenType.PAREN_CLOSE) parseArgumentList() else emptyList()
         expect(TokenType.PAREN_CLOSE)
-        val returnType = if (peek()?.type == TokenType.COLON) {
+        val returnType = if (peek().type == TokenType.COLON) {
             expect(TokenType.COLON)
             expect(TokenType.IDENTIFIER)
         } else null
@@ -64,7 +88,7 @@ class Parser(
     private fun parseArgumentList(): List<ArgumentNode> {
         val arguments = mutableListOf<ArgumentNode>()
         arguments.add(parseArgument())
-        while (peek()?.type == TokenType.COMMA) {
+        while (peek().type == TokenType.COMMA) {
             expect(TokenType.COMMA)
             arguments.add(parseArgument())
         }
@@ -81,7 +105,7 @@ class Parser(
     private fun parseBlock(): BlockNode {
         expect(TokenType.BRACE_OPEN)
         val statements = mutableListOf<Node>()
-        while (peek()?.type != TokenType.BRACE_CLOSE) {
+        while (peek().type != TokenType.BRACE_CLOSE) {
             statements.add(parseStatement())
         }
         expect(TokenType.BRACE_CLOSE)
@@ -89,11 +113,14 @@ class Parser(
     }
 
     private fun parseStatement(): Node {
-        return when (peek()?.type) {
+        return when (peek().type) {
             TokenType.IDENTIFIER -> {
-                val nextToken = tokens.getOrNull(position + 1)
+                val nextToken = peekNext()
                 when (nextToken?.type) {
-                    TokenType.PAREN_OPEN -> parseFunctionCall()
+                    TokenType.PAREN_OPEN -> {
+                        parseFunctionCall().also { expect(TokenType.SEMICOLON) }
+                    }
+
                     TokenType.IDENTIFIER -> parseVariableDeclaration()
                     else -> if (nextToken?.value == "=") parseAssignment() else {
                         parseExpression().also { expect(TokenType.SEMICOLON) }
@@ -113,7 +140,7 @@ class Parser(
     private fun parseVariableDeclaration(): VariableDeclarationNode {
         val type = expect(TokenType.IDENTIFIER)
         val identifier = expect(TokenType.IDENTIFIER)
-        val expression = if (peek()?.type == TokenType.OPERATOR && peek()?.value == "=") {
+        val expression = if (peek().type == TokenType.OPERATOR && peek().value == "=") {
             expect(TokenType.OPERATOR)
             parseExpression()
         } else null
@@ -132,9 +159,8 @@ class Parser(
     private fun parseFunctionCall(): FunctionCallNode {
         val identifier = expect(TokenType.IDENTIFIER)
         expect(TokenType.PAREN_OPEN)
-        val arguments = if (peek()?.type != TokenType.PAREN_CLOSE) parseExpressionList() else emptyList()
+        val arguments = if (peek().type != TokenType.PAREN_CLOSE) parseExpressionList() else emptyList()
         expect(TokenType.PAREN_CLOSE)
-        expect(TokenType.SEMICOLON)
         return FunctionCallNode(identifier.value, arguments)
     }
 
@@ -144,7 +170,7 @@ class Parser(
         val predicate = parseExpression()
         expect(TokenType.PAREN_CLOSE)
         val thenBlock = parseBlock()
-        val elseBlock = if (peek()?.type == TokenType.ELSE) {
+        val elseBlock = if (peek().type == TokenType.ELSE) {
             expect(TokenType.ELSE)
             parseBlock()
         } else null
@@ -174,14 +200,13 @@ class Parser(
     private fun parseBinaryOperator(precedence: Int): Node {
         var left: Node = parseTerm()
         while (true) {
-            val operator = peek() ?: break
+            val operator = peek()
             if (operator.type != TokenType.OPERATOR) break
             val operatorPrecedence = getOperatorPrecedence(operator)
-            println("${operator.value} $operatorPrecedence")
             if (operatorPrecedence < precedence) {
                 return left
             }
-            position++
+            next()
             val right = parseBinaryOperator(operatorPrecedence + 1)
 
             left = BinaryOperatorNode(operator.value, left, right)
@@ -194,12 +219,20 @@ class Parser(
     }
 
     private fun parseTerm(): Node {
-        if (peek()?.isPrefixOperator() == true) {
+        if (peek().isPrefixOperator()) {
             val operator = expect(TokenType.OPERATOR)
             return PrefixOperatorNode(operator.value, parseTerm())
         }
-        return when (peek()?.type) {
-            TokenType.IDENTIFIER -> VariableNode(expect(TokenType.IDENTIFIER).value)
+        return when (peek().type) {
+            TokenType.IDENTIFIER -> {
+                val nextToken = peekNext()
+                when (nextToken?.type) {
+                    TokenType.PAREN_OPEN -> parseFunctionCall()
+                    else -> VariableNode(expect(TokenType.IDENTIFIER).value)
+                }
+
+            }
+
             TokenType.NUMBER -> NumberLiteralNode(expect(TokenType.NUMBER).value.toInt())
             TokenType.STRING -> StringLiteralNode(expect(TokenType.STRING).value)
             TokenType.PAREN_OPEN -> {
@@ -219,7 +252,7 @@ class Parser(
     private fun parseExpressionList(): List<Node> {
         val expressions = mutableListOf<Node>()
         expressions.add(parseExpression())
-        while (peek()?.type == TokenType.COMMA) {
+        while (peek().type == TokenType.COMMA) {
             expect(TokenType.COMMA)
             expressions.add(parseExpression())
         }

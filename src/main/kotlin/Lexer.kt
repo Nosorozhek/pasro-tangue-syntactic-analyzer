@@ -14,16 +14,15 @@ class Lexer(private val input: String, private val logger: ErrorLogger) {
 
     private fun Char.isDigit(): Boolean = this in '0'..'9'
 
-    fun tokenize(): List<Token> {
-        val tokens = mutableListOf<Token>()
+    fun tokenize(): Sequence<Token> = sequence {
         while (!endOfFile()) {
             start = position
             startColumn = column
-            scanToken()?.let { tokens.add(it) }
+            scanToken()?.let { yield(it) }
         }
 
-        tokens.add(Token(TokenType.EOF, "", position, line, column))
-        return tokens
+        yield(Token(TokenType.EOF, "", position, line, column))
+
     }
 
     private fun scanToken(): Token? {
@@ -47,7 +46,7 @@ class Lexer(private val input: String, private val logger: ErrorLogger) {
             '"' -> parseStringLiteral()
             '!' -> if (match('=')) Token(TokenType.OPERATOR, "!=", start, line, startColumn)
             else {
-                logger.logError(start, line, startColumn, "Unexpected character")
+                logger.logError(start + 1, line, startColumn + 1, "Unexpected character")
                 throw IllegalArgumentException()
             }
 

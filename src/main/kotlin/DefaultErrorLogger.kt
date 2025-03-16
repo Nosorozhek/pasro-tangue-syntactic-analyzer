@@ -8,9 +8,8 @@ interface ErrorLogger {
 
 class DefaultErrorLogger(private val code: String, private val file: URL) : ErrorLogger {
     override fun logError(position: Int, line: Int, column: Int, message: String) {
-        var start = position
+        var start = position - 1
         while (start >= 0 && code[start] != '\n') --start
-        ++start
 
         var end = position
         while (end < code.length && code[end] != '\n') ++end

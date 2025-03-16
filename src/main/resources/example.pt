@@ -1,9 +1,9 @@
 fun main() {
     int x = 2 + 3 + 5 + 4;
-    int y = 42;
+    int y = min(x, 42);
     x = 3 + y / 2;
-    str s = "Hello, world!";
-    println(s);
+    str s = "Hello, ";
+    println(s, "world!");
 
     if (x < y) {
         println(-1 + x * 2 + y * 3 - 4);

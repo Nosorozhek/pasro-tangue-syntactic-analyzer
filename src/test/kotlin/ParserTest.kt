@@ -5,12 +5,14 @@ import kotlin.test.assertEquals
 
 class ParserTest {
     private fun lexer(input: String): Lexer = Lexer(input, StubErrorLogger())
-    private fun parser(tokens: List<Token>): Parser = Parser(tokens, StubErrorLogger())
+    private fun parser(tokens: Sequence<Token>): Parser = Parser(tokens, StubErrorLogger())
 
     private fun function(name: String, type: String, args: List<ArgumentNode>, vararg statements: Node): ProgramNode =
         ProgramNode(
             listOf(FunctionDeclarationNode(name, args, type, BlockNode(statements.toList())))
         )
+
+    private fun function(name: String, vararg args: Node): FunctionCallNode = FunctionCallNode(name, args.toList())
 
     private fun main(vararg statements: Node): ProgramNode = function("main", "void", listOf(), *statements)
 
@@ -44,6 +46,24 @@ class ParserTest {
         """.trimIndent()
         val ast = parse(input)
         val expected = main(ret(number(42)))
+        assertEquals(expected, ast)
+    }
+
+    @Test
+    fun `parse function call`() {
+        val input = """
+            fun main() {
+                print(min(42, 12), max(42, 12));
+            }
+        """.trimIndent()
+        val ast = parse(input)
+        val expected = main(
+            function(
+                "print",
+                function("min", number(42), number(12)),
+                function("max", number(42), number(12)),
+            )
+        )
         assertEquals(expected, ast)
     }
 
