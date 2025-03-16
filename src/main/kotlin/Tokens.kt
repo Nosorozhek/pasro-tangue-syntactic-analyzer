@@ -21,7 +21,6 @@ enum class TokenType {
     BRACE_OPEN,
     BRACE_CLOSE,
 
-    COMMENT,
     EOF;
 }
 

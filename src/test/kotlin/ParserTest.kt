@@ -188,4 +188,18 @@ class ParserTest {
         )
         assertEquals(expected, ast)
     }
+
+    @Test
+    fun `parse comments`() {
+        val input = """
+            // just comment
+            fun main() {
+                // another comment
+                return 42; // inline comment
+            }
+        """.trimIndent()
+        val ast = parse(input)
+        val expected = main(ret(number(42)))
+        assertEquals(expected, ast)
+    }
 }

@@ -139,4 +139,18 @@ class LexerTest {
         )
         assertContentEquals(expected, tokens)
     }
+
+    @Test
+    fun `tokenize comments`() {
+        val input = """
+            // just comment
+            fun main() {
+                // another comment
+                return 42; // inline comment
+            }
+        """.trimIndent()
+        val tokens = tokenize(input).map { it.value }
+        val expected = listOf("fun", "main", "(", ")", "{", "return", "42", ";", "}", "")
+        assertContentEquals(expected, tokens)
+    }
 }

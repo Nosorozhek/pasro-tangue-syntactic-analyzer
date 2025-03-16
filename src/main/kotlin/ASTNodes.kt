@@ -1,6 +1,5 @@
 package org.example
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -26,7 +25,6 @@ data class FunctionDeclarationNode(
 @Serializable
 data class ArgumentNode(
     val name: String,
-    @SerialName("type")
     val type: String,
     override val kind: String = "argument"
 ) : Node
@@ -40,7 +38,6 @@ data class BlockNode(
 @Serializable
 data class VariableDeclarationNode(
     val name: String,
-    @SerialName("type")
     val type: String,
     val value: Node?,
     override val kind: String = "variable_declaration"

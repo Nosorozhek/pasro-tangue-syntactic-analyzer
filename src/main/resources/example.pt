@@ -1,17 +1,36 @@
 fun main() {
-    int x = 2 + 3 + 5 + 4;
-    int y = min(x, 42);
-    x = 3 + y / 2;
-    str s = "Hello, ";
-    println(s, "world!");
+    // Variable declaration and assignment
+    int x;
+    int y = 2;
+    x = y + 3;
 
+    // Arithmetic operations with parentheses
+    x = -x + 2 / 1 - 3 * (14 % 5);
+
+    // String literals in double quotes
+    str s = "Hello, world!";
+
+    // Function call
+    println(s);
+
+    // Function call with arguments
+    x = min(2, 3) + 12;
+
+    // If-else statements:
     if (x < y) {
-        println(-1 + x * 2 + y * 3 - 4);
+        // Number of whitespaces between tokens doesn't matter
+        println(-1 +   x *2
+            + y*3   -4);
     } else {
         println("x is greater than or equal to y");
     }
+
+    if (x == 2) {
+        println("x is 2");
+    }
 }
 
+// Function declaration
 fun min(a: int, b: int) : int {
     if (a < b) {
         return a;

@@ -14,13 +14,13 @@ private class StubErrorLogger : ErrorLogger {
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.SingleShotTime)
 @Warmup(iterations = 5)
-@Measurement(iterations = 5, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 10, timeUnit = TimeUnit.MILLISECONDS)
 open class JmhBenchmarks {
     private lateinit var input: String
 
     @Setup(Level.Trial)
     fun setUp() {
-        input = (1..100000).joinToString(" ") {
+        input = (1..50000).joinToString(" ") {
             """
                 fun test${it}(a: int, b: int) {
                    print((a - b) * (a - b) / 2 + 12 * (a + b) % 7);
@@ -37,8 +37,8 @@ open class JmhBenchmarks {
 
     @Benchmark
     fun lexerBenchmark(): Int {
-        val tokens = Lexer(input, StubErrorLogger()).tokenize().toList()
-        return tokens.size
+        val numberOfTokens = Lexer(input, StubErrorLogger()).tokenize().count()
+        return numberOfTokens
     }
 
     @Benchmark

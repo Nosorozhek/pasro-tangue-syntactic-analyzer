@@ -62,7 +62,7 @@ class Lexer(private val input: String, private val logger: ErrorLogger) {
             '/' -> {
                 if (match('/')) {
                     while (peek() != '\n' && !endOfFile()) next()
-                    Token(TokenType.COMMENT, input.substring(start, position), start, line, startColumn)
+                    null
                 } else {
                     Token(TokenType.OPERATOR, "/", start, line, startColumn)
                 }
